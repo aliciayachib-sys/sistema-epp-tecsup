@@ -71,6 +71,7 @@ class EppController extends Controller
 
     public function update(Request $request, $id)
     {
+    
         $epp = Epp::findOrFail($id);
 
         $request->validate([
@@ -78,7 +79,7 @@ class EppController extends Controller
             'categoria_id' => 'required|exists:categorias,id',
             'cantidad' => 'nullable|integer|min:0',
             'vida_util_meses' => 'nullable|integer|min:1',
-            'codigo_logistica' => 'nullable|string|unique:epps,codigo_logistica,' . $epp->id,
+            'codigo_logistica' => 'nullable|string',
             'fecha_registro' => 'nullable|date',
         ]);
 
