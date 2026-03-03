@@ -128,7 +128,7 @@
                         </div>
                         <div class="col-md-6">
                             <h6 class="fw-bold text-uppercase text-muted mb-2" style="font-size: 0.85rem;">Fecha de Vencimiento</h6>
-                            <p class="fw-bold">{{ $epp->fecha_vencimiento ? $epp->fecha_vencimiento->format('d/m/Y') : '—' }}</p>
+                            <p class="fw-bold">{{ $epp->vencimiento_real ? $epp->vencimiento_real->format('d/m/Y') : '—' }}</p>
                         </div>
                     </div>
 

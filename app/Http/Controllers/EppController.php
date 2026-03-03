@@ -28,10 +28,11 @@ class EppController extends Controller
             'categoria_id' => 'required|exists:categorias,id',
             'cantidad' => 'nullable|integer|min:0',
             'vida_util_meses' => 'nullable|integer|min:1',
+            'fecha_ingreso_almacen' => 'nullable|date',
+            'fecha_registro' => 'nullable|date',
         ]);
-        $request->validate(['fecha_registro' => 'nullable|date']);
 
-        $data = $request->all();
+        $data = $request->except(['fecha_vencimiento']); // No permitimos setear vencimiento manualmente
 
         // Valores por defecto inteligentes
         $data['tipo'] = $request->tipo ?? 'Protección de seguridad';
@@ -40,8 +41,16 @@ class EppController extends Controller
         $data['deteriorado'] = 0;
         $data['vida_util_meses'] = $request->vida_util_meses ?? 12; // Valor por defecto: 1 año
 
-        // Determine the base date for calculation
-        $baseDate = $request->filled('fecha_registro') ? Carbon::parse($request->fecha_registro) : now();
+        // Base date: preferir fecha_ingreso_almacen; si no, fecha_registro; si no, now
+        $baseDate = null;
+        if ($request->filled('fecha_ingreso_almacen')) {
+            $baseDate = Carbon::parse($request->fecha_ingreso_almacen);
+            $data['fecha_ingreso_almacen'] = $baseDate->toDateString();
+        } elseif ($request->filled('fecha_registro')) {
+            $baseDate = Carbon::parse($request->fecha_registro);
+        } else {
+            $baseDate = now();
+        }
 
         if ($request->hasFile('imagen')) {
             $data['imagen'] = $request->file('imagen')->store('epps', 'public');
@@ -49,7 +58,7 @@ class EppController extends Controller
 
         $epp = Epp::create($data);
 
-        // Override created_at with fecha_registro if provided
+        // Sincronizar created_at para mantener consistencia histórica en accesorios/reportes
         $epp->update(['created_at' => $baseDate]);
 
         return redirect()->route('epps.index')->with('success', 'EPP registrado correctamente');
@@ -71,7 +80,6 @@ class EppController extends Controller
 
     public function update(Request $request, $id)
     {
-    
         $epp = Epp::findOrFail($id);
 
         $request->validate([
@@ -80,10 +88,11 @@ class EppController extends Controller
             'cantidad' => 'nullable|integer|min:0',
             'vida_util_meses' => 'nullable|integer|min:1',
             'codigo_logistica' => 'nullable|string',
+            'fecha_ingreso_almacen' => 'nullable|date',
             'fecha_registro' => 'nullable|date',
         ]);
 
-        $data = $request->all();
+        $data = $request->except(['fecha_vencimiento']); // Bloquear edición manual
 
         if ($request->hasFile('imagen')) {
             $data['imagen'] = $request->file('imagen')->store('epps', 'public');
@@ -93,17 +102,22 @@ class EppController extends Controller
         if ($request->has('cantidad')) {
             $entregado = $epp->entregado ?? 0;
             $deteriorado = $epp->deteriorado ?? 0;
-            // El nuevo stock es la nueva cantidad total menos lo que ya no está en almacén
             $data['stock'] = $request->cantidad - $entregado - $deteriorado;
         }
 
         $epp->fill($data);
 
-        if ($request->filled('fecha_registro')) {
+        // Sincronizar fechas base
+        if ($request->filled('fecha_ingreso_almacen')) {
+            $fecha = Carbon::parse($request->fecha_ingreso_almacen);
+            $epp->fecha_ingreso_almacen = $fecha->toDateString();
+            // Opcional: si quieres alinear created_at:
+            $epp->created_at = $fecha;
+        } elseif ($request->filled('fecha_registro')) {
             $epp->created_at = Carbon::parse($request->fecha_registro);
         }
 
-        $epp->save();
+        $epp->save(); // El modelo recalculará fecha_vencimiento en saving
         return redirect()->route('epps.index')->with('success', 'EPP actualizado correctamente');
     }
 

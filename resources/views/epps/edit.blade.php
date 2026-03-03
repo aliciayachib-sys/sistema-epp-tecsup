@@ -132,11 +132,12 @@
                             </div>
 
                             <div class="col-md-3 mb-3">
-                                <label class="form-label fw-bold">Fecha de Registro</label>
+                                <label class="form-label fw-bold">Fecha de Ingreso al Almacén</label>
                                 <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-calendar-check"></i></span>
-                                    <input type="date" name="fecha_registro" class="form-control bg-light border-start-0" value="{{ old('fecha_registro', $epp->created_at ? $epp->created_at->format('Y-m-d') : '') }}">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="bi bi-calendar2-check"></i></span>
+                                    <input type="date" name="fecha_ingreso_almacen" class="form-control bg-light border-start-0" value="{{ old('fecha_ingreso_almacen', $epp->fecha_ingreso_almacen ?? ($epp->created_at ? $epp->created_at->format('Y-m-d') : '')) }}">
                                 </div>
+                                <small class="text-muted">El vencimiento se calcula automáticamente con la vida útil.</small>
                             </div>
                         </div>
 

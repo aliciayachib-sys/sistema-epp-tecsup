@@ -65,7 +65,9 @@ class EppImport implements ToModel, WithStartRow, SkipsEmptyRows
             }
         }
 
-        $fechaBase = $this->fechaRegistro ? Carbon::parse($this->fechaRegistro) : now();
+        // Detectar fecha de ingreso por fila si existe en el Excel; si no, usar la pasada al import; si no, now()
+        $fechaDetec = $this->detectarFechaIngreso($row);
+        $fechaBase = $fechaDetec ?: ($this->fechaRegistro ? Carbon::parse($this->fechaRegistro) : now());
         $fechaVencimiento = $fechaBase->copy()->addMonths($vidaUtilMeses);
 
         $imagenFinal = $imagenPath ?? $this->generarImagenAutomatica($nombreEpp);
@@ -126,5 +128,38 @@ class EppImport implements ToModel, WithStartRow, SkipsEmptyRows
         );
 
         return $categoria->id;
+    }
+
+    /**
+     * Intenta detectar una fecha de ingreso en la fila.
+     * Busca celdas con formatos comunes de fecha (dd/mm/yyyy, yyyy-mm-dd, etc.).
+     */
+    private function detectarFechaIngreso(array $row): ?Carbon
+    {
+        foreach ($row as $cell) {
+            if (!is_string($cell) && !is_numeric($cell)) continue;
+
+            $value = trim((string)$cell);
+            if ($value === '') continue;
+
+            // Heurística: si contiene separadores típicos de fecha
+            if (preg_match('/\\d{1,4}[\\\/\\-]\\d{1,2}[\\\/\\-]\\d{1,4}/', $value)) {
+                try {
+                    return Carbon::parse($value);
+                } catch (\Throwable $e) {
+                    // ignorar y seguir
+                }
+            }
+
+            // Si es número (fechas Excel serial), intentar convertir (Excel base 1899-12-30)
+            if (is_numeric($cell) && $cell > 30000 && $cell < 60000) {
+                try {
+                    return Carbon::create(1899, 12, 30)->addDays((int)$cell);
+                } catch (\Throwable $e) {
+                    // ignorar
+                }
+            }
+        }
+        return null;
     }
 }
