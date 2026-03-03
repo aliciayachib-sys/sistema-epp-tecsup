@@ -114,6 +114,13 @@ Route::middleware(['auth', 'isAdmin'])->group(function () {
         Route::resource('entregas', EntregaController::class);
 
 
+
+        // --- AGREGAR ESTO AQUÍ ---
+// Ruta para obtener la matriz de EPP por taller (AJAX)
+Route::get('/api/matriz-taller/{taller}', [EntregaController::class, 'getMatrizPorTaller'])
+    ->name('entregas.matriz_taller');
+
+
         Route::get('/asignaciones', [AsignacionController::class, 'index'])->name('asignaciones.index');
         Route::post('/asignaciones/entregar', [AsignacionController::class, 'store'])->name('asignaciones.store');
         Route::delete('/asignaciones/{id}', [AsignacionController::class, 'destroy'])->name('asignaciones.destroy');

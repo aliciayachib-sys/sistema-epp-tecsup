@@ -30,7 +30,7 @@ return new class extends Migration
             $table->timestamps();
             
             // Índices
-            $table->unique(['departamento_id', 'epp_id', 'puesto']);
+            $table->unique(['departamento_id', 'epp_id', 'puesto', 'taller'], 'matriz_unique_custom');
         });
     }
 

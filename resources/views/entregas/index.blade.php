@@ -356,41 +356,56 @@
 const matrizReglas = @json($matriz ?? []);
 const normalizar = (str) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 
+
+
 function abrirModalEntrega(id, nombre, tallerDocente, puestoDocente) {
     document.getElementById('personal_id').value = id;
     document.getElementById('nombreDocente').innerText = nombre;
-    document.getElementById('buscadorIndividual').value = '';
-    document.querySelectorAll('#modalEntrega tbody tr').forEach(row => row.style.display = '');
-    document.querySelectorAll('#modalEntrega input[type="checkbox"]').forEach(chk => chk.checked = false);
-    document.querySelectorAll('#modalEntrega input[type="number"]').forEach(input => input.value = 1);
-    document.querySelectorAll('[id^="badge_info_"]').forEach(el => el.style.display = 'none');
+    
+    // 1. Limpiar todos los checks antes de marcar
+    document.querySelectorAll('#modalEntrega input[type="checkbox"]').forEach(check => check.checked = false);
+    document.querySelectorAll('[id^="badge_info_"]').forEach(badge => {
+        badge.style.display = 'none';
+        badge.innerText = '';
+    });
 
+    // 2. Normalizar el taller del docente (ej: "G1 / G2" -> "G1/G2")
+    let tallerDoc = tallerDocente ? tallerDocente.toString().toUpperCase().trim() : "";
+
+    // 3. Recorrer la matriz
     matrizReglas.forEach(regla => {
-        let coincideTaller = !normalizar(regla.taller) || normalizar(tallerDocente).includes(normalizar(regla.taller));
-        let coincidePuesto = !normalizar(regla.puesto) || normalizar(puestoDocente).includes(normalizar(regla.puesto));
-        if (coincideTaller && coincidePuesto) {
+        let tallerRegla = regla.taller ? regla.taller.toString().toUpperCase().trim() : "";
+
+        // LÓGICA CLAVE: 
+        // Si el taller del docente contiene el taller de la regla (ej: "G1 / G2" contiene "G1")
+        // O si la regla es para "TODOS"
+        if (tallerDoc.includes(tallerRegla) || tallerRegla === "TODOS" || tallerRegla === "") {
+            
             let checkbox = document.getElementById('check_ind_' + regla.epp_id);
+            let badge = document.getElementById('badge_info_' + regla.epp_id);
+
             if (checkbox) {
                 checkbox.checked = true;
-                let badge = document.getElementById('badge_info_' + regla.epp_id);
+
                 if (badge) {
-                    let esObligatorio = regla.tipo_requerimiento === 'obligatorio';
-                    badge.innerText = esObligatorio ? 'Obligatorio' : 'Sugerido Taller';
-                    badge.className = esObligatorio ? 'badge bg-danger ms-1' : 'badge bg-info text-dark ms-1';
+                    badge.innerText = (regla.tipo_requerimiento === 'obligatorio') ? 'Obligatorio' : 'Específico';
+                    badge.className = (regla.tipo_requerimiento === 'obligatorio') ? 'badge bg-danger ms-1' : 'badge bg-info text-dark ms-1';
                     badge.style.display = 'inline-block';
                 }
             }
         }
     });
 
+    // 4. (Opcional) Reordenar para ver los marcados arriba
     let tbody = document.querySelector('#modalEntrega tbody');
     let rows = Array.from(tbody.querySelectorAll('tr'));
     rows.sort((a, b) => {
-        let chkA = a.querySelector('input[type="checkbox"]').checked;
-        let chkB = b.querySelector('input[type="checkbox"]').checked;
-        return (chkA === chkB) ? 0 : (chkA ? -1 : 1);
+        let checkA = a.querySelector('input[type="checkbox"]').checked ? 1 : 0;
+        let checkB = b.querySelector('input[type="checkbox"]').checked ? 1 : 0;
+        return checkB - checkA;
     });
     rows.forEach(row => tbody.appendChild(row));
+
     new bootstrap.Modal(document.getElementById('modalEntrega')).show();
 }
 

@@ -9,26 +9,7 @@
             <p class="text-muted">Control de inventario y asignaciones para Jiancarlo</p>
         </div>
         <div class="d-flex gap-2">
-            {{-- BOTÓN DE ALERTA DE VENCIMIENTO --}}
-            @php
-                $hoy = now();
-                $proximosAVencer = $epps->filter(function($e) use ($hoy) {
-                    if (!$e->fecha_vencimiento) return false;
-                    $fechaVenc = \Carbon\Carbon::parse($e->fecha_vencimiento);
-                    // Retorna true si ya venció o vence en los próximos 15 días
-                    return $fechaVenc->diffInDays($hoy, false) >= -15; 
-                })->count();
-            @endphp
-            
-            @if($proximosAVencer > 0)
-            <button type="button" class="btn btn-warning d-flex align-items-center shadow-sm position-relative me-2" 
-                    onclick="const f = document.getElementById('vencimientoFilter'); f.value='critico'; f.dispatchEvent(new Event('change'));">
-                <i class="bi bi-bell-fill me-1"></i> Alertas
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-light">
-                    {{ $proximosAVencer }}
-                </span>
-            </button>
-            @endif
+           
 
             <button type="button" class="btn btn-outline-danger d-flex align-items-center shadow-sm" data-bs-toggle="modal" data-bs-target="#modalVaciarEpps">
                 <i class="bi bi-trash3 me-1"></i> Vaciar Todo
@@ -59,14 +40,7 @@
                         </div>
                     </div>
                     
-                    <div class="col-md-4">
-                        <label class="small fw-bold text-muted mb-1 d-block"><i class="bi bi-calendar-event"></i> Estado Vencimiento:</label>
-                        <select id="vencimientoFilter" class="form-select form-select-sm border-warning shadow-sm">
-                            <option value="all">-- Todos los vencimientos --</option>
-                            <option value="critico">Vencidos o por vencer (< 15 días)</option>
-                            <option value="ok">Vigentes</option>
-                        </select>
-                    </div>
+                    
 
                     <div class="col-md-4">
                         <label class="small fw-bold text-muted mb-1 d-block"><i class="bi bi-list-stars"></i> Seleccionar Tipo:</label>
@@ -93,22 +67,14 @@
     {{-- GRILLA DE CARDS --}}
     <div class="row" id="eppGrid">
         @forelse($epps as $epp)
-        @php
-            $diasRestantes = $epp->fecha_vencimiento ? $hoy->diffInDays(\Carbon\Carbon::parse($epp->fecha_vencimiento), false) : null;
-            $estadoVencimiento = 'ok';
-            if($epp->fecha_vencimiento !== null) {
-                if($diasRestantes <= 15) $estadoVencimiento = 'critico';
-            }
-        @endphp
-
         <div class="col-md-4 mb-4 epp-item cat-{{ $epp->categoria_id }}" 
              data-subtipo="{{ strtolower($epp->nombre) }}" 
              data-nombre="{{ strtolower($epp->nombre) }}" 
              data-descripcion="{{ strtolower($epp->descripcion) }}"
              data-codigo="{{ strtolower($epp->codigo_logistica ?? '') }}"
-             data-vencimiento="{{ $estadoVencimiento }}">
+        >
             
-            <div class="card border-0 shadow-sm h-100 card-epp {{ $estadoVencimiento == 'critico' ? 'border-top border-warning border-4' : '' }}">
+            <div class="card border-0 shadow-sm h-100 card-epp">
                 <div class="epp-image-container position-relative" style="height: 180px; background: #f8f9fa; display: flex; align-items: center; justify-content: center;">
                     @if($epp->imagen)
                         <img src="{{ asset('storage/' . $epp->imagen) }}" class="img-fluid h-100 p-2" style="object-fit: contain;">
@@ -125,13 +91,6 @@
                             <span class="badge bg-danger shadow-sm">Agotado</span>
                         @endif
 
-                        @if($epp->fecha_vencimiento)
-                            @if($diasRestantes < 0)
-                                <span class="badge bg-danger shadow-sm"><i class="bi bi-x-circle me-1"></i>VENCIDO</span>
-                            @elseif($diasRestantes <= 15)
-                                <span class="badge bg-warning text-dark shadow-sm pulse-alert"><i class="bi bi-exclamation-triangle me-1"></i>POR VENCER</span>
-                            @endif
-                        @endif
                     </div>
                 </div>
                 
@@ -181,11 +140,15 @@
 
                     <div class="specs-box bg-light rounded-3 p-2 mb-3 border">
                         <div class="d-flex justify-content-between align-items-center mb-1 border-bottom pb-1">
-                            <span class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-calendar-x me-1"></i>VENCIMIENTO:</span>
-                            <span class="fw-bold {{ $estadoVencimiento == 'critico' ? 'text-danger' : 'text-dark' }}" style="font-size: 0.75rem;">
-                                {{ $epp->fecha_vencimiento ? \Carbon\Carbon::parse($epp->fecha_vencimiento)->format('d/m/Y') : 'SIN FECHA' }}
-                            </span>
-                        </div>
+                        <span class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-shield-check me-1"></i>VIGENCIA:</span>
+                        <span class="fw-bold text-dark" style="font-size: 0.75rem;">
+                            @if($epp->vida_util_meses)
+                                {{ $epp->vida_util_meses >= 12 ? ($epp->vida_util_meses / 12) . ' Años' : $epp->vida_util_meses . ' Meses' }}
+                            @else
+                                Sin definir
+                            @endif
+                        </span>
+                    </div>
                         <div class="d-flex justify-content-between align-items-center mb-1 border-bottom pb-1">
                             <span class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-upc-scan me-1"></i>CÓDIGO:</span>
                             <span class="fw-bold text-dark" style="font-size: 0.75rem;">{{ $epp->codigo_logistica ?? 'CSK-'.$epp->id }}</span>
@@ -346,27 +309,26 @@
 
         const filterBtns = document.querySelectorAll('.filter-btn');
         const subtipoFilter = document.getElementById('subtipoFilter');
-        const vencimientoFilter = document.getElementById('vencimientoFilter');
+       
         const searchInput = document.getElementById('searchEpp');
         const items = document.querySelectorAll('.epp-item');
 
         function applyFilters() {
             const activeCatBtn = document.querySelector('.filter-btn.btn-primary');
             const activeCat = activeCatBtn ? activeCatBtn.dataset.filter : 'all';
-            const activeSubtipo = subtipoFilter.value;
-            const activeVenc = vencimientoFilter.value;
+            const activeSubtipo = subtipoFilter ? subtipoFilter.value : 'all';
             const searchText = searchInput.value.toLowerCase();
 
             items.forEach(item => {
                 const matchesCat = activeCat === 'all' || item.classList.contains(activeCat);
                 const matchesSubtipo = activeSubtipo === 'all' || item.dataset.subtipo === activeSubtipo;
-                const matchesVenc = activeVenc === 'all' || item.dataset.vencimiento === activeVenc;
+                
                 
                 const matchesSearch = item.dataset.nombre.includes(searchText) || 
                                      item.dataset.codigo.includes(searchText) ||
                                      item.dataset.descripcion.includes(searchText);
 
-                item.style.display = (matchesCat && matchesSubtipo && matchesSearch && matchesVenc) ? 'block' : 'none';
+                item.style.display = (matchesCat && matchesSubtipo && matchesSearch) ? 'block' : 'none';
             });
         }
 
@@ -383,7 +345,7 @@
         });
 
         subtipoFilter.addEventListener('change', applyFilters);
-        vencimientoFilter.addEventListener('change', applyFilters);
+        
         searchInput.addEventListener('input', applyFilters);
     });
 </script>

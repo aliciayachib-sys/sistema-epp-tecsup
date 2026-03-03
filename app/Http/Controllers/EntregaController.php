@@ -138,4 +138,33 @@ class EntregaController extends Controller
     {
         //
     }
+
+
+
+    /**
+     * Obtiene los EPPs requeridos según el taller seleccionado.
+     * Respuesta para AJAX.
+     */
+    public function getMatrizPorTaller($taller)
+    {
+        try {
+            // Buscamos los EPP_ID y el tipo (obligatorio/especifico) en la matriz
+            $matriz = DB::table('matriz_homologacions')
+                ->where('taller', $taller)
+                ->where('activo', true)
+                ->select('epp_id', 'tipo_requerimiento')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data'    => $matriz
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al consultar la matriz'
+            ], 500);
+        }
+    }
 }
