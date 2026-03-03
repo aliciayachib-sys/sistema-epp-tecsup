@@ -9,8 +9,11 @@ class MatrizDinamicaSeeder extends Seeder
 {
     public function run()
     {
-        // 1. LIMPIEZA
-        DB::table('matriz_homologacions')->delete();
+        // 1. LIMPIEZA TOTAL Y RESET DE IDs
+    // Desactivamos llaves foráneas para que nos deje limpiar la tabla
+    DB::statement('SET FOREIGN_KEY_CHECKS=0');
+    DB::table('matriz_homologacions')->truncate(); 
+    DB::statement('SET FOREIGN_KEY_CHECKS=1');
 
         $estructura = [
             // --- DEPARTAMENTO DE MECÁNICA ---
@@ -98,16 +101,20 @@ class MatrizDinamicaSeeder extends Seeder
             ]
         ];
 
-        // --- LÓGICA ---
+        // --- LÓGICA MEJORADA ---
         foreach ($estructura as $nombreDepto => $grupos) {
+            // Buscamos el departamento
             $depto = DB::table('departamentos')->where('nombre', 'like', "%$nombreDepto%")->first();
 
             if ($depto) {
                 foreach ($grupos as $config) {
                     foreach ($config['talleres'] as $nombreTaller) {
                         foreach ($config['epps'] as $nombreEpp => $tipo) {
-                            // Búsqueda por nombre parcial para evitar errores de truncado
-                            $epp = DB::table('epps')->where('nombre', 'like', substr($nombreEpp, 0, 30) . '%')->first();
+                            
+                            // MEJORA: Buscamos por nombre completo o parcial sin cortar rígidamente a 30
+                            $epp = DB::table('epps')
+                                ->where('nombre', 'like', '%' . trim($nombreEpp) . '%')
+                                ->first();
 
                             if ($epp) {
                                 DB::table('matriz_homologacions')->insert([
@@ -120,11 +127,17 @@ class MatrizDinamicaSeeder extends Seeder
                                     'created_at' => now(),
                                     'updated_at' => now(),
                                 ]);
+                            } else {
+                                // Esto te avisará en la terminal si el EPP no existe
+                                $this->command->warn("EPP no encontrado: " . $nombreEpp);
                             }
                         }
                     }
                 }
+            } else {
+                $this->command->error("Departamento no encontrado: " . $nombreDepto);
             }
         }
+        $this->command->info("¡Matriz sincronizada con éxito!");
     }
-}
+    }

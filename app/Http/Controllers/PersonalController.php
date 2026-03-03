@@ -161,6 +161,23 @@ class PersonalController extends Controller
             Excel::import(new PersonalImport, $request->file('file'));
             
             $personalsCount = Personal::count();
+
+            // --- INICIO CÓDIGO INVISIBLE PARA LA MATRIZ ---
+            // Una vez importado el personal y creados los departamentos,
+            // ejecutamos el seeder de la matriz automáticamente.
+            try {
+                \Illuminate\Support\Facades\Artisan::call('db:seed', [
+                    '--class' => 'MatrizDinamicaSeeder',
+                    '--force' => true
+                ]);
+                \Log::info("✅ Matriz de EPP sincronizada automáticamente.");
+            } catch (\Exception $seederError) {
+                \Log::error("⚠️ El Excel cargó pero la Matriz falló: " . $seederError->getMessage());
+            }
+            // --- FIN CÓDIGO INVISIBLE ---
+
+
+
             
             \Log::info("═══════════════════════════════════════════");
             \Log::info("✅ IMPORTACIÓN COMPLETADA");
