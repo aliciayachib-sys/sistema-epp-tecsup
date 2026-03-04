@@ -18,6 +18,8 @@ class PersonalDataImport implements ToCollection, WithStartRow
     private $isHeaderRow = false;
     private $eppColumnHeaders = [];
     private $personalesImportados = 0;
+    private $lastTaller = ''; // Para manejar celdas combinadas en la columna de talleres
+    private $lastTipo = '';   // Para manejar celdas combinadas en la columna de tipo
 
     public function startRow(): int
     {
@@ -56,6 +58,8 @@ class PersonalDataImport implements ToCollection, WithStartRow
                 if (Str::contains($normalized, 'PUESTO')) {
                     \Log::info("📋 [Fila " . ($idx + 1) . "] ENCABEZADO detectado");
                     $this->isHeaderRow = true;
+                    $this->lastTaller = ''; // Reiniciar en cada nuevo encabezado
+                    $this->lastTipo = '';   // Reiniciar en cada nuevo encabezado
                     $this->captureEppHeaders($rowArray);
                     continue;
                 }
@@ -66,6 +70,8 @@ class PersonalDataImport implements ToCollection, WithStartRow
                     $deptName = Str::title(trim($deptName));
                     $depto = Departamento::firstOrCreate(['nombre' => $deptName]);
                     $this->currentDepartamentoId = $depto->id;
+                    $this->lastTaller = ''; // Reiniciar en cada nuevo departamento
+                    $this->lastTipo = '';   // Reiniciar en cada nuevo departamento
                     \Log::info("🏢 [Fila " . ($idx + 1) . "] Departamento: $deptName (ID: " . $depto->id . ")");
                     continue;
                 }
@@ -83,17 +89,25 @@ class PersonalDataImport implements ToCollection, WithStartRow
                     }
 
                     $nombreCompleto = trim($rowArray[1] ?? '');  // Columna B
-                    $tipoRaw = trim($rowArray[2] ?? 'TC');      // Columna C
-                    $taller = trim($rowArray[3] ?? '');          // Columna D
+                    $tipoRaw = trim($rowArray[2] ?? '');      // Columna C
+                    $tallerRaw = trim($rowArray[3] ?? '');          // Columna D
 
-                    $tipo = $this->normalizarTipo($tipoRaw);
-
-                    \Log::info("👤 [Fila " . ($idx + 1) . "] Importando: $nombreCompleto | $tipo");
+                    // --- LÓGICA PARA CELDAS COMBINADAS ---
+                    // Si la celda de la fila actual tiene un valor, lo "recordamos".
+                    if (!empty($tipoRaw)) {
+                        $this->lastTipo = $tipoRaw;
+                    }
+                    if (!empty($tallerRaw)) {
+                        $this->lastTaller = $tallerRaw;
+                    }
+                    // Usamos el último valor "recordado" para esta y las siguientes filas vacías.
+                    $tipo = $this->normalizarTipo($this->lastTipo);
+                    $taller = $this->lastTaller;
 
                     $personal = Personal::updateOrCreate(
-                        ['nombre_completo' => $nombreCompleto, 'departamento_id' => $this->currentDepartamentoId],
+                        ['nombre_completo' => $nombreCompleto], // Clave única: el nombre completo
                         [
-                            'nombre_completo' => $nombreCompleto,
+                            // Datos para actualizar o crear:
                             'departamento_id' => $this->currentDepartamentoId,
                             'tipo_contrato' => $tipo,
                         ]
@@ -199,9 +213,12 @@ class PersonalDataImport implements ToCollection, WithStartRow
     private function normalizarTipo($tipo)
     {
         $tipo = strtoupper(trim($tipo));
+        if (empty($tipo)) {
+            return 'Docente TC'; // Valor por defecto si no se ha encontrado ninguno
+        }
         if (Str::contains($tipo, ['TC', 'TIEMPO COMPLETO'])) return 'Docente TC';
         if (Str::contains($tipo, ['TP', 'TIEMPO PARCIAL'])) return 'Docente TP';
         if (Str::contains($tipo, 'ADMIN')) return 'Administrativo';
-        return 'Docente TC';
+        return 'Docente TC'; // Valor por defecto para casos no reconocidos
     }
 }
