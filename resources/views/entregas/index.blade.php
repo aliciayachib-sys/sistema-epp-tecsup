@@ -142,10 +142,16 @@
 
                         {{-- Columna Entregar --}}
                         <td style="text-align: center;">
-                            <button class="btn btn-primary btn-sm rounded-pill px-3"
-                                onclick="abrirModalEntrega({{ $persona->id }}, '{{ $persona->nombre_completo }}', '{{ $tallerNombre }}', '{{ $persona->tipo_contrato ?? '' }}')">
-                                <i class="bi bi-hand-index-thumb me-1"></i> Entregar
-                            </button>
+                            {{-- DESPUÉS: escapar correctamente con addslashes para JS --}}
+<button class="btn btn-primary btn-sm rounded-pill px-3"
+    onclick="abrirModalEntrega(
+        {{ $persona->id }},
+        '{{ addslashes($persona->nombre_completo) }}',
+        '{{ addslashes($tallerNombre) }}',
+        '{{ addslashes($persona->tipo_contrato ?? '') }}'
+    )">
+    <i class="bi bi-hand-index-thumb me-1"></i> Entregar
+</button>
                         </td>
                     </tr>
                     @endforeach
@@ -167,6 +173,11 @@
                 @csrf
                 <div class="modal-body">
                     <input type="hidden" name="personal_id" id="personal_id">
+                    <div class="mb-3">
+                        <label for="fecha_entrega_individual" class="form-label fw-bold small">Fecha de Entrega</label>
+                        <input type="date" name="fecha_entrega" id="fecha_entrega_individual" class="form-control" value="{{ now()->format('Y-m-d') }}">
+                        <small class="text-muted">Si la entrega fue en una fecha pasada, selecciónala aquí.</small>
+                    </div>
                     <div class="alert alert-light border mb-3 py-2">
                         <small class="text-muted"><i class="bi bi-check2-square me-1"></i> Marca los equipos que deseas entregar.</small>
                     </div>
@@ -188,19 +199,23 @@
                             </thead>
                             <tbody>
                                 @foreach($epps as $epp)
-                                <tr>
+                                @php $sinStock = $epp->stock <= 0; @endphp
+                                <tr class="{{ $sinStock ? 'table-light text-muted' : '' }}">
                                     <td>
-                                        <input class="form-check-input" type="checkbox" name="epps[{{ $epp->id }}][checked]" value="1" id="check_ind_{{ $epp->id }}">
+                                        <input class="form-check-input" type="checkbox" name="epps[{{ $epp->id }}][checked]" value="1" id="check_ind_{{ $epp->id }}" data-stock="{{ $epp->stock }}" {{ $sinStock ? 'disabled' : '' }}>
                                     </td>
                                     <td>
-                                        <label class="form-check-label w-100 small" for="check_ind_{{ $epp->id }}" style="cursor: pointer;">
+                                        <label class="form-check-label w-100 small" for="check_ind_{{ $epp->id }}" style="{{ $sinStock ? '' : 'cursor: pointer;' }}">
                                             {{ $epp->nombre }}
+                                            @if($sinStock)
+                                                <span class="badge bg-danger ms-1" style="font-size: 0.7em;">AGOTADO</span>
+                                            @endif
                                             <span id="badge_info_{{ $epp->id }}" class="badge ms-1" style="display: none; font-size: 0.7em;"></span>
                                         </label>
                                     </td>
-                                    <td class="text-center"><span class="badge bg-secondary">{{ $epp->stock }}</span></td>
+                                    <td class="text-center"><span class="badge {{ $sinStock ? 'bg-danger' : 'bg-secondary' }}">{{ $epp->stock }}</span></td>
                                     <td>
-                                        <input type="number" name="epps[{{ $epp->id }}][cantidad]" class="form-control form-control-sm text-center" value="1" min="1">
+                                        <input type="number" name="epps[{{ $epp->id }}][cantidad]" class="form-control form-control-sm text-center" value="1" min="1" {{ $sinStock ? 'disabled' : '' }}>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -233,6 +248,11 @@
                         <div>Se asignará el equipo seleccionado a <strong>{{ $personals->count() }}</strong> docentes.</div>
                     </div>
                     <div class="mb-3">
+                        <label for="fecha_entrega_masiva" class="form-label fw-bold small">Fecha de Entrega</label>
+                        <input type="date" name="fecha_entrega" id="fecha_entrega_masiva" class="form-control" value="{{ now()->format('Y-m-d') }}">
+                        <small class="text-muted">La fecha seleccionada se aplicará a todas las asignaciones.</small>
+                    </div>
+                    <div class="mb-3">
                         <div class="input-group">
                             <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
                             <input type="text" id="buscadorMasivo" class="form-control border-start-0 ps-0" placeholder="Buscar EPP para todos...">
@@ -250,16 +270,20 @@
                             </thead>
                             <tbody>
                                 @foreach($epps as $epp)
-                                <tr>
+                                @php $sinStock = $epp->stock <= 0; @endphp
+                                <tr class="{{ $sinStock ? 'table-light text-muted' : '' }}">
                                     <td>
-                                        <input class="form-check-input" type="checkbox" name="epps[{{ $epp->id }}][checked]" value="1" id="check_epp_{{ $epp->id }}">
+                                        <input class="form-check-input" type="checkbox" name="epps[{{ $epp->id }}][checked]" value="1" id="check_epp_{{ $epp->id }}" data-stock="{{ $epp->stock }}" {{ $sinStock ? 'disabled' : '' }}>
                                     </td>
                                     <td>
-                                        <label class="form-check-label w-100" for="check_epp_{{ $epp->id }}" style="cursor: pointer;">{{ $epp->nombre }}</label>
+                                        <label class="form-check-label w-100" for="check_epp_{{ $epp->id }}" style="{{ $sinStock ? '' : 'cursor: pointer;' }}">
+                                            {{ $epp->nombre }}
+                                            @if($sinStock) <span class="badge bg-danger ms-1" style="font-size: 0.7em;">AGOTADO</span> @endif
+                                        </label>
                                     </td>
-                                    <td class="text-center"><span class="badge bg-secondary">{{ $epp->stock }}</span></td>
+                                    <td class="text-center"><span class="badge {{ $sinStock ? 'bg-danger' : 'bg-secondary' }}">{{ $epp->stock }}</span></td>
                                     <td>
-                                        <input type="number" name="epps[{{ $epp->id }}][cantidad]" class="form-control form-control-sm text-center" value="1" min="1">
+                                        <input type="number" name="epps[{{ $epp->id }}][cantidad]" class="form-control form-control-sm text-center" value="1" min="1" {{ $sinStock ? 'disabled' : '' }}>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -354,80 +378,120 @@
 
 <script>
 const matrizReglas = @json($matriz ?? []);
-const normalizar = (str) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim() : "";
 
-
+function normalizar(str) {
+    return str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
+}
 
 function abrirModalEntrega(id, nombre, tallerDocente, puestoDocente) {
     document.getElementById('personal_id').value = id;
     document.getElementById('nombreDocente').innerText = nombre;
-    
-    // 1. Limpiar todos los checks antes de marcar
-    document.querySelectorAll('#modalEntrega input[type="checkbox"]').forEach(check => check.checked = false);
+
+    // 1. Limpiar todos los checks y badges
+    document.querySelectorAll('#modalEntrega input[type="checkbox"]').forEach(check => {
+        check.checked = false;
+    });
     document.querySelectorAll('[id^="badge_info_"]').forEach(badge => {
         badge.style.display = 'none';
         badge.innerText = '';
+        badge.className = 'badge ms-1';
     });
 
-    // 2. Normalizar el taller del docente (ej: "G1 / G2" -> "G1/G2")
-    let tallerDoc = tallerDocente ? tallerDocente.toString().toUpperCase().trim() : "";
+    // 2. Normalizar talleres del docente (soporta comas y barras)
+    let tallerDoc = normalizar(tallerDocente).replace(/\s*[,\/]\s*/g, '|');
+    let talleresDocente = tallerDoc.split('|').map(t => t.trim()).filter(t => t !== '');
 
-    // 3. Recorrer la matriz
+    console.log('Talleres del docente:', talleresDocente);
+    console.log('Total reglas en matriz:', matrizReglas.length);
+
+    // 3. Marcar EPPs según la matriz (incluso agotados)
     matrizReglas.forEach(regla => {
-        let tallerRegla = regla.taller ? regla.taller.toString().toUpperCase().trim() : "";
+        let tallerRegla = normalizar(regla.taller ? regla.taller.toString() : "");
 
-        // LÓGICA CLAVE: 
-        // Si el taller del docente contiene el taller de la regla (ej: "G1 / G2" contiene "G1")
-        // O si la regla es para "TODOS"
-        if (tallerDoc.includes(tallerRegla) || tallerRegla === "TODOS" || tallerRegla === "") {
-            
+        let aplica = false;
+        if (tallerRegla === "" || tallerRegla === "TODOS") {
+            aplica = true;
+        } else {
+            aplica = talleresDocente.some(t =>
+                t === tallerRegla || t.includes(tallerRegla) || tallerRegla.includes(t)
+            );
+        }
+
+        if (aplica) {
             let checkbox = document.getElementById('check_ind_' + regla.epp_id);
             let badge = document.getElementById('badge_info_' + regla.epp_id);
 
             if (checkbox) {
                 checkbox.checked = true;
 
+                // Si no tiene stock, marcar visualmente pero deshabilitar
+                let stock = parseInt(checkbox.getAttribute('data-stock') ?? '0');
+                if (stock <= 0) {
+                    checkbox.disabled = true;
+                } else {
+                    checkbox.disabled = false;
+                }
+
                 if (badge) {
-                    badge.innerText = (regla.tipo_requerimiento === 'obligatorio') ? 'Obligatorio' : 'Específico';
-                    badge.className = (regla.tipo_requerimiento === 'obligatorio') ? 'badge bg-danger ms-1' : 'badge bg-info text-dark ms-1';
+                    let esObligatorio = regla.tipo_requerimiento === 'obligatorio';
+                    badge.innerText = esObligatorio ? 'Obligatorio' : 'Específico';
+                    badge.className = esObligatorio
+                        ? 'badge bg-danger ms-1'
+                        : 'badge bg-info text-dark ms-1';
                     badge.style.display = 'inline-block';
                 }
             }
         }
     });
 
-    // 4. (Opcional) Reordenar para ver los marcados arriba
+    // 4. Reordenar: marcados arriba, luego disponibles, luego agotados
     let tbody = document.querySelector('#modalEntrega tbody');
     let rows = Array.from(tbody.querySelectorAll('tr'));
     rows.sort((a, b) => {
-        let checkA = a.querySelector('input[type="checkbox"]').checked ? 1 : 0;
-        let checkB = b.querySelector('input[type="checkbox"]').checked ? 1 : 0;
-        return checkB - checkA;
+        let cbA = a.querySelector('input[type="checkbox"]');
+        let cbB = b.querySelector('input[type="checkbox"]');
+        let checkedA = cbA?.checked ? 1 : 0;
+        let checkedB = cbB?.checked ? 1 : 0;
+        let stockA = parseInt(cbA?.getAttribute('data-stock') ?? '0');
+        let stockB = parseInt(cbB?.getAttribute('data-stock') ?? '0');
+
+        // Primero: marcados con stock
+        // Segundo: marcados sin stock (agotados)
+        // Tercero: no marcados con stock
+        // Cuarto: no marcados sin stock
+        let prioridadA = checkedA && stockA > 0 ? 3 : checkedA && stockA <= 0 ? 2 : stockA > 0 ? 1 : 0;
+        let prioridadB = checkedB && stockB > 0 ? 3 : checkedB && stockB <= 0 ? 2 : stockB > 0 ? 1 : 0;
+
+        return prioridadB - prioridadA;
     });
     rows.forEach(row => tbody.appendChild(row));
 
     new bootstrap.Modal(document.getElementById('modalEntrega')).show();
 }
 
+// Buscador modal individual
 document.getElementById('buscadorIndividual').addEventListener('keyup', function() {
     let filter = this.value.toLowerCase();
     document.querySelectorAll('#modalEntrega tbody tr').forEach(row => {
-        row.style.display = row.querySelector('label').textContent.toLowerCase().includes(filter) ? '' : 'none';
+        let texto = row.querySelector('label')?.textContent.toLowerCase() ?? '';
+        row.style.display = texto.includes(filter) ? '' : 'none';
     });
 });
 
+// Buscador modal masivo
 document.getElementById('buscadorMasivo').addEventListener('keyup', function() {
     let filter = this.value.toLowerCase();
     document.querySelectorAll('#modalMasivo tbody tr').forEach(row => {
-        row.style.display = row.querySelector('label').textContent.toLowerCase().includes(filter) ? '' : 'none';
+        let texto = row.querySelector('label')?.textContent.toLowerCase() ?? '';
+        row.style.display = texto.includes(filter) ? '' : 'none';
     });
 });
 
 function filtrarTabla() {
     let busqueda = document.getElementById('buscadorDocente').value.toLowerCase();
     document.querySelectorAll('#tablaPersonal tbody tr').forEach(row => {
-        let nombre = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
-        let dni = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
+        let nombre = row.querySelector('td:nth-child(1)')?.textContent.toLowerCase() ?? '';
+        let dni = row.querySelector('td:nth-child(4)')?.textContent.toLowerCase() ?? '';
         row.style.display = (nombre.includes(busqueda) || dni.includes(busqueda)) ? '' : 'none';
     });
 }

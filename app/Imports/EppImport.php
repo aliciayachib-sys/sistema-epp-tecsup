@@ -18,7 +18,7 @@ class EppImport implements ToModel, WithStartRow, SkipsEmptyRows
     public function __construct($imagenesPorNombre = [], $fechaRegistro = null)
     {
         $this->imagenesPorNombre = $imagenesPorNombre;
-        $this->fechaRegistro = $fechaRegistro; // ✅ CORRECCIÓN: asignar la fecha
+        $this->fechaRegistro = $fechaRegistro;
         Log::info('EppImport inicializado con ' . count($imagenesPorNombre) . ' imágenes');
         if (count($imagenesPorNombre) > 0) {
             Log::info('EPPs con imagen: ' . implode(', ', array_slice(array_keys($imagenesPorNombre), 0, 5)));
@@ -65,14 +65,12 @@ class EppImport implements ToModel, WithStartRow, SkipsEmptyRows
             }
         }
 
-        // Detectar fecha de ingreso por fila si existe en el Excel; si no, usar la pasada al import; si no, now()
         $fechaDetec = $this->detectarFechaIngreso($row);
         $fechaBase = $fechaDetec ?: ($this->fechaRegistro ? Carbon::parse($this->fechaRegistro) : now());
         $fechaVencimiento = $fechaBase->copy()->addMonths($vidaUtilMeses);
 
         $imagenFinal = $imagenPath ?? $this->generarImagenAutomatica($nombreEpp);
 
-        // ✅ CORRECCIÓN: separar la creación del modelo y asignar created_at por separado
         $epp = new Epp([
             'nombre'             => $nombreEpp,
             'imagen'             => $imagenFinal,
@@ -142,8 +140,8 @@ class EppImport implements ToModel, WithStartRow, SkipsEmptyRows
             $value = trim((string)$cell);
             if ($value === '') continue;
 
-            // Heurística: si contiene separadores típicos de fecha
-            if (preg_match('/\\d{1,4}[\\\/\\-]\\d{1,2}[\\\/\\-]\\d{1,4}/', $value)) {
+            // ✅ CORRECCIÓN: regex corregido — barras invertidas bien escapadas dentro de clase de caracteres
+            if (preg_match('/\d{1,4}[\/\-]\d{1,2}[\/\-]\d{1,4}/', $value)) {
                 try {
                     return Carbon::parse($value);
                 } catch (\Throwable $e) {
@@ -151,7 +149,7 @@ class EppImport implements ToModel, WithStartRow, SkipsEmptyRows
                 }
             }
 
-            // Si es número (fechas Excel serial), intentar convertir (Excel base 1899-12-30)
+            // Si es número serial de Excel (base 1899-12-30), intentar convertir
             if (is_numeric($cell) && $cell > 30000 && $cell < 60000) {
                 try {
                     return Carbon::create(1899, 12, 30)->addDays((int)$cell);

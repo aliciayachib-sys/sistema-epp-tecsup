@@ -55,6 +55,32 @@ class DepartamentoController extends Controller
     }
 
     /**
+     * Actualiza un departamento existente.
+     */
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'nombre' => 'required|string|max:255|unique:departamentos,nombre,' . $id,
+            'imagen' => 'nullable|image|max:2048',
+            'imagen_url_text' => 'nullable|url',
+        ]);
+
+        $departamento = Departamento::findOrFail($id);
+        $departamento->nombre = $request->nombre;
+
+        if ($request->hasFile('imagen')) {
+            $path = $request->file('imagen')->store('departamentos', 'public');
+            $departamento->imagen_url = 'storage/' . $path;
+        } elseif ($request->filled('imagen_url_text')) {
+            $departamento->imagen_url = $request->imagen_url_text;
+        }
+
+        $departamento->save();
+
+        return back()->with('success', 'Departamento actualizado correctamente.');
+    }
+
+    /**
      * Muestra los detalles de un departamento y su lista de docentes asignados.
      */
     public function show(string $id)

@@ -19,7 +19,7 @@
     }
     .img-container {
         position: relative;
-        height: 160px;
+        height: 240px;
         overflow: hidden;
     }
     .img-gradient {
@@ -28,7 +28,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+        background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
         z-index: 1;
     }
     .badge-docentes {
@@ -90,12 +90,17 @@
                     <div class="badge-docentes">
                         <i class="bi bi-people-fill me-1"></i> {{ $depto->personals_count ?? 0 }}
                     </div>
-                    <div class="position-absolute top-0 start-0 m-2 z-2">
+                    <div class="position-absolute top-0 start-0 m-2" style="z-index: 10;">
                         <div class="dropdown">
                             <button class="btn btn-sm btn-light bg-opacity-75 rounded-circle" type="button" data-bs-toggle="dropdown" title="Opciones">
                                 <i class="bi bi-three-dots-vertical"></i>
                             </button>
                             <ul class="dropdown-menu shadow border-0">
+                                <li>
+                                    <button class="dropdown-item" onclick="abrirModalEditar({{ $depto->id }}, '{{ e($depto->nombre) }}', '{{ $depto->imagen_url }}')">
+                                        <i class="bi bi-pencil me-2"></i>Editar
+                                    </button>
+                                </li>
                                 <li>
                                     <button class="dropdown-item text-danger" onclick="abrirModalBorrarIndividual({{ $depto->id }}, '{{ e($depto->nombre) }}')">
                                         <i class="bi bi-trash me-2"></i>Eliminar
@@ -183,6 +188,52 @@
     </div>
 </div>
 
+<!-- Modal Editar Departamento -->
+<div class="modal fade" id="editarDeptoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: 28px;">
+            <div class="modal-body p-5">
+                <div class="text-center mb-4">
+                    <div class="bg-warning bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                        <i class="bi bi-pencil-square text-warning fs-1"></i>
+                    </div>
+                    <h3 class="fw-bold">Editar Departamento</h3>
+                </div>
+                
+                <form id="formEditarDepto" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    @method('PUT')
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Nombre del Departamento</label>
+                        <input type="text" name="nombre" id="edit_nombre" class="form-control form-control-lg border-0 bg-light px-4 py-3" required style="border-radius: 15px;">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Actualizar Imagen (Opcional)</label>
+                        <ul class="nav nav-pills mb-2 gap-2" id="pills-tab-edit" role="tablist">
+                            <li class="nav-item"><button class="nav-link active btn-sm rounded-pill" id="pills-file-tab-edit" data-bs-toggle="pill" data-bs-target="#pills-file-edit" type="button">Subir Archivo</button></li>
+                            <li class="nav-item"><button class="nav-link btn-sm rounded-pill" id="pills-url-tab-edit" data-bs-toggle="pill" data-bs-target="#pills-url-edit" type="button">Usar URL</button></li>
+                        </ul>
+                        <div class="tab-content" id="pills-tabContent-edit">
+                            <div class="tab-pane fade show active" id="pills-file-edit">
+                                <input type="file" name="imagen" class="form-control" accept="image/*">
+                            </div>
+                            <div class="tab-pane fade" id="pills-url-edit">
+                                <input type="url" name="imagen_url_text" id="edit_imagen_url" class="form-control" placeholder="https://ejemplo.com/imagen.jpg">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning btn-lg w-100 rounded-pill fw-bold py-3 text-white">
+                        Guardar Cambios
+                    </button>
+                    <button type="button" class="btn btn-link w-100 text-muted text-decoration-none mt-2" data-bs-dismiss="modal">Cancelar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal Confirmar Borrar Todo -->
 <div class="modal fade" id="modalBorrarTodo" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -233,6 +284,21 @@
 </div>
 
 <script>
+function abrirModalEditar(id, nombre, imagenUrl) {
+    const form = document.getElementById('formEditarDepto');
+    form.action = `{{ url('departamentos') }}/${id}`;
+    
+    document.getElementById('edit_nombre').value = nombre;
+    
+    if (imagenUrl && imagenUrl.startsWith('http')) {
+        document.getElementById('edit_imagen_url').value = imagenUrl;
+    } else {
+        document.getElementById('edit_imagen_url').value = '';
+    }
+
+    new bootstrap.Modal(document.getElementById('editarDeptoModal')).show();
+}
+
 function abrirModalBorrarIndividual(id, nombre) {
     const form = document.getElementById('formBorrarIndividual');
     const mensaje = document.getElementById('mensajeBorrarIndividual');

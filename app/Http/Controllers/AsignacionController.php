@@ -26,6 +26,7 @@ class AsignacionController extends Controller
         $request->validate([
             'personal_id' => 'required|exists:personals,id',
             'epps'        => 'required|array',
+            'fecha_entrega' => 'nullable|date',
         ]);
 
         $personal = Personal::findOrFail($request->personal_id);
@@ -42,6 +43,7 @@ class AsignacionController extends Controller
         try {
             DB::beginTransaction();
             $nombresEntregados = [];
+            $fechaEntrega = $request->filled('fecha_entrega') ? \Carbon\Carbon::parse($request->fecha_entrega) : now();
 
             foreach ($seleccionados as $eppId => $data) {
                 $epp = Epp::lockForUpdate()->find($eppId);
@@ -57,7 +59,7 @@ class AsignacionController extends Controller
                     'personal_id' => $personal->id,
                     'epp_id'      => $epp->id,
                     'cantidad'    => $cantidad,
-                    'fecha_entrega' => now(),
+                    'fecha_entrega' => $fechaEntrega,
                     'estado'      => 'Entregado'
                 ]);
 

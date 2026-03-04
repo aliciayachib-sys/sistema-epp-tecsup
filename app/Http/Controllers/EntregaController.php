@@ -31,7 +31,7 @@ class EntregaController extends Controller
 
         $personals = $personalsQuery->get();
 
-        $epps = Epp::where('stock', '>', 0)->orderBy('nombre', 'asc')->get();
+        $epps = Epp::orderBy('nombre', 'asc')->get();
         $talleres = Taller::where('activo', true)->orderBy('nombre')->get();
         $matriz = MatrizHomologacion::where('activo', true)->get();
         $departamentos = Departamento::orderBy('nombre')->get();
@@ -46,6 +46,7 @@ class EntregaController extends Controller
     {
         $request->validate([
             'epps' => 'required|array',
+            'fecha_entrega' => 'nullable|date',
         ]);
 
         $departamentoIdFiltro = $request->input('departamento_id');
@@ -74,6 +75,7 @@ class EntregaController extends Controller
         try {
             DB::beginTransaction();
             $nombresAsignados = [];
+            $fechaEntrega = $request->filled('fecha_entrega') ? \Carbon\Carbon::parse($request->fecha_entrega) : now();
 
             foreach ($seleccionados as $eppId => $data) {
                 $epp = Epp::lockForUpdate()->find($eppId);
@@ -91,7 +93,7 @@ class EntregaController extends Controller
                         'personal_id' => $personal->id,
                         'epp_id'      => $epp->id,
                         'cantidad'    => $cantidad,
-                        'fecha_entrega' => now(),
+                        'fecha_entrega' => $fechaEntrega,
                         'estado'      => 'Entregado'
                     ]);
                 }

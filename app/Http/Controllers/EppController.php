@@ -45,7 +45,6 @@ class EppController extends Controller
         $baseDate = null;
         if ($request->filled('fecha_ingreso_almacen')) {
             $baseDate = Carbon::parse($request->fecha_ingreso_almacen);
-            $data['fecha_ingreso_almacen'] = $baseDate->toDateString();
         } elseif ($request->filled('fecha_registro')) {
             $baseDate = Carbon::parse($request->fecha_registro);
         } else {
@@ -92,7 +91,7 @@ class EppController extends Controller
             'fecha_registro' => 'nullable|date',
         ]);
 
-        $data = $request->except(['fecha_vencimiento']); // Bloquear edición manual
+        $data = $request->except(['fecha_vencimiento', 'fecha_ingreso_almacen']); // Bloquear edición manual y campo inexistente
 
         if ($request->hasFile('imagen')) {
             $data['imagen'] = $request->file('imagen')->store('epps', 'public');
@@ -110,7 +109,6 @@ class EppController extends Controller
         // Sincronizar fechas base
         if ($request->filled('fecha_ingreso_almacen')) {
             $fecha = Carbon::parse($request->fecha_ingreso_almacen);
-            $epp->fecha_ingreso_almacen = $fecha->toDateString();
             // Opcional: si quieres alinear created_at:
             $epp->created_at = $fecha;
         } elseif ($request->filled('fecha_registro')) {
