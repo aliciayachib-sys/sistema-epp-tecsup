@@ -61,25 +61,15 @@ class PersonalController extends Controller
             'nombre_completo' => 'required|string|max:255',
             'dni' => 'nullable|string|max:20|unique:personals,dni,' . $id,
             'carrera' => 'nullable|string|max:255',
-            'taller_nombre' => 'nullable|string|max:255',
+            'tipo_contrato' => 'nullable|string',
         ]);
 
-        $personal->update($request->except(['taller_nombre', 'taller_id']));
-
-        if ($request->filled('taller_nombre')) {
-            // Busca el taller por nombre o lo crea si no existe (asignándolo al mismo departamento)
-            $taller = Taller::firstOrCreate(
-                [
-                    'nombre' => trim($request->taller_nombre),
-                    'departamento_id' => $personal->departamento_id
-                ],
-                ['activo' => true]
-            );
-            
-            $personal->talleres()->sync([$taller->id]);
-        } else {
-            $personal->talleres()->detach();
-        }
+        $personal->update($request->only([
+            'nombre_completo',
+            'dni',
+            'carrera',
+            'tipo_contrato'
+        ]));
 
         return back()->with('success', 'Datos del docente actualizados.');
     }

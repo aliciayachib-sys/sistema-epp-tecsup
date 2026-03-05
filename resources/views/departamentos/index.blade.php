@@ -64,19 +64,19 @@
 </style>
 
 <div class="container py-4">
-    <div class="page-header px-5 shadow-sm d-flex justify-content-between align-items-center">
-        <div>
+    <div class="page-header px-3 px-lg-5 shadow-sm d-block d-lg-flex justify-content-lg-between align-items-lg-center text-center text-lg-start">
+        <div class="mb-4 mb-lg-0">
             <h1 class="display-5 fw-bold text-dark mb-1">Panel de Control</h1>
             <p class="fs-5 text-muted mb-0">Gestión de Seguridad por Departamentos</p>
         </div>
-        <div class="d-flex gap-3">
-            <a href="{{ route('organizador.index') }}" class="btn btn-white shadow-sm rounded-pill px-4 py-2 fw-bold text-primary border">
+        <div class="d-grid gap-2 d-sm-flex justify-content-sm-center justify-content-lg-end">
+            <a href="{{ route('organizador.index') }}" class="btn btn-white shadow-sm rounded-pill px-4 py-2 fw-bold text-primary border d-flex align-items-center justify-content-center">
                 <i class="bi bi-person-gear me-2"></i>Organizar
             </a>
-            <button class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#nuevoDeptoModal">
+            <button class="btn btn-primary rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#nuevoDeptoModal">
                 <i class="bi bi-plus-lg me-2"></i>Nuevo Departamento
             </button>
-            <button class="btn btn-outline-danger rounded-circle p-2 shadow-sm" title="Limpiar todo" data-bs-toggle="modal" data-bs-target="#modalBorrarTodo">
+            <button class="btn btn-outline-danger rounded-pill px-3 py-2 shadow-sm" title="Limpiar todo" data-bs-toggle="modal" data-bs-target="#modalBorrarTodo">
                 <i class="bi bi-trash3 px-1"></i>
             </button>
         </div>

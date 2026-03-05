@@ -3,7 +3,7 @@
 @section('content')
 <div class="container-fluid">
     <!-- ENCABEZADO PRINCIPAL -->
-    <div class="mb-4">
+    <div class="mb-4 text-center text-md-start">
         <h1 class="fw-bold mb-1" style="color: #000;">Control y Trazabilidad de EPP</h1>
         <p class="text-muted">Tecsup Norte - Centro de Seguridad</p>
     </div>
@@ -113,7 +113,7 @@
         <div class="col-12 mb-4">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-light border-bottom">
-                    <h5 class="mb-0 fw-bold">📊 Proyección de Renovaciones (Próximos 6 Meses)</h5>
+                    <h5 class="mb-0 fw-bold">📊 Proyección de Renovaciones (Próximos 12 Meses)</h5>
                 </div>
                 <div class="card-body">
                     <canvas id="chartRenovaciones" style="max-height: 300px;"></canvas>
@@ -133,22 +133,7 @@
                 </div>
                 <div class="card-body p-3">
                     <div class="row">
-                        @forelse($alertasVencidos as $alerta)
-                        <!-- Alerta: Vencidos -->
-                        <div class="col-md-6 mb-3">
-                            <div class="alert alert-danger border-0 mb-2" role="alert">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <strong>⚠️ {{ count($alertasVencidos) }} EPP Vencido(s)</strong>
-                                        <br>
-                                        <small>{{ implode(', ', $alertasVencidos->pluck('nombre')->toArray()) }}</small>
-                                    </div>
-                                    <button class="btn btn-sm btn-outline-danger">Ver detalle</button>
-                                </div>
-                            </div>
-                        </div>
-                        @empty
-                        @endforelse
+                        {{-- El bloque de alertas de vencidos se eliminó porque $alertasVencidos siempre está vacío según DashboardController --}}
 
                         @forelse($alertasStockCritico as $alerta)
                         <!-- Alerta: Stock Crítico -->
