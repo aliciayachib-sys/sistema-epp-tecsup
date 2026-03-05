@@ -15,4 +15,4 @@ EXPOSE 80
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 # 2. Comando para ejecutar migraciones y encender el servidor
-CMD php artisan migrate --force && /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf
+CMD php artisan migrate --force && supervisord -n
