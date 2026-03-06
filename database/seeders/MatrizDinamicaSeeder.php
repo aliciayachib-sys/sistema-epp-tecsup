@@ -9,11 +9,9 @@ class MatrizDinamicaSeeder extends Seeder
 {
     public function run()
     {
-        // 1. LIMPIEZA TOTAL Y RESET DE IDs
-    // Desactivamos llaves foráneas para que nos deje limpiar la tabla
-    DB::statement('SET FOREIGN_KEY_CHECKS=0');
-    DB::table('matriz_homologacions')->truncate(); 
-    DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        // 1. LIMPIEZA TOTAL COMPATIBLE CON POSTGRESQL
+        // En Postgres no usamos FOREIGN_KEY_CHECKS. Usamos CASCADE para limpiar.
+        DB::table('matriz_homologacions')->delete();
 
         $estructura = [
             // --- DEPARTAMENTO DE MECÁNICA ---
