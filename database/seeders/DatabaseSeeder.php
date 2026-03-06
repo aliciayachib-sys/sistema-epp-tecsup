@@ -17,13 +17,18 @@ class DatabaseSeeder extends Seeder
     public function run(): void
 {
 
-// Crear el usuario administrador
-    \App\Models\User::create([
-        'name' => 'Administrador',
-        'email' => 'admin@tecsup.edu.pe',
-        'password' => Hash::make('admin123'), // La contraseña será admin123
-        'role' => 'Admin',
-    ]);
+// CAMBIO AQUÍ: Usamos updateOrCreate para que no falle si ya existe
+        \App\Models\User::updateOrCreate(
+            ['email' => 'admin@tecsup.edu.pe'], // Si encuentra este email...
+            [
+                'name' => 'Administrador',
+                'password' => Hash::make('admin123'),
+                'role' => 'Admin',
+                // Agregamos esto para que NO te mande a la pantalla de error 404 (primer-ingreso)
+                'created_at' => now()->subDays(1),
+                'updated_at' => now(),
+            ]
+        );
     
 
 
