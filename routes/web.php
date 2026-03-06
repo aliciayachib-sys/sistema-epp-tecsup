@@ -58,8 +58,11 @@ Route::post('password/reset', [App\Http\Controllers\PasswordController::class, '
 Route::middleware(['auth'])->group(function () {
 
     Route::get('/primer-ingreso', function () {
+    if (view()->exists('auth.primer-ingreso')) {
         return view('auth.primer-ingreso');
-    })->name('primer.ingreso');
+    }
+    return "Error: El archivo resources/views/auth/primer-ingreso.blade.php NO existe en el servidor.";
+})->name('primer.ingreso');
 
     Route::post('/primer-ingreso', [ProfileController::class, 'actualizarPasswordInicial'])
         ->name('primer.ingreso.update');
