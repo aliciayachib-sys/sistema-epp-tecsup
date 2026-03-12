@@ -1,18 +1,30 @@
-FROM richarvey/nginx-php-fpm:3.1.6
+FROM php:8.2-apache
 
-COPY . /var/www/html
-COPY nginx.conf /etc/nginx/sites-available/default.conf
+RUN apt-get update && apt-get install -y \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip unzip curl git \
+    && docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd
 
-RUN ln -sf /etc/nginx/sites-available/default.conf /etc/nginx/sites-enabled/default.conf
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html
+
+COPY . .
 
 RUN composer install --no-dev --optimize-autoloader
+
+COPY .env.railway .env
+
+RUN php artisan config:clear && \
+    php artisan cache:clear
 
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache && \
     chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-COPY .env.railway /var/www/html/.env
+RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
 
-RUN php artisan config:clear && \
-    php artisan cache:clear
+RUN a2enmod rewrite
 
 EXPOSE 80
