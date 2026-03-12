@@ -116,22 +116,35 @@ class ExcelImageExtractor
             
             $nombreSanitizado = preg_replace('/[^a-zA-Z0-9_-]/', '_', substr($nombreEpp, 0, 30));
 
-            // ── Si hay CLOUDINARY_URL, subir a Cloudinary ──
-            if (env('CLOUDINARY_URL')) {
+            // ── Detectar CLOUDINARY_URL con getenv() que funciona bien en Docker/Railway ──
+            $cloudinaryUrl = getenv('CLOUDINARY_URL') ?: env('CLOUDINARY_URL');
+
+            if (!empty($cloudinaryUrl)) {
+                Log::info("Cloudinary detectado, subiendo imagen...");
+
                 $tempFile = tempnam(sys_get_temp_dir(), 'epp_') . '.' . $ext;
                 file_put_contents($tempFile, $imagenContenido);
 
-                $result = cloudinary()->upload($tempFile, [
-                    'folder'    => 'epps',
-                    'public_id' => 'epp_' . $nombreSanitizado . '_' . time(),
-                ]);
+                try {
+                    $result = cloudinary()->upload($tempFile, [
+                        'folder'    => 'epps',
+                        'public_id' => 'epp_' . $nombreSanitizado . '_' . time(),
+                    ]);
 
-                unlink($tempFile);
+                    unlink($tempFile);
 
-                $cloudinaryUrl = $result->getSecurePath();
-                Log::info("✓ Imagen subida a Cloudinary: {$cloudinaryUrl}");
+                    $url = $result->getSecurePath();
+                    Log::info("✓ Imagen subida a Cloudinary: {$url}");
 
-                return $cloudinaryUrl;
+                    return $url;
+
+                } catch (\Throwable $cloudEx) {
+                    Log::error("Error subiendo a Cloudinary: " . $cloudEx->getMessage());
+                    if (file_exists($tempFile)) unlink($tempFile);
+                    // Si falla Cloudinary, cae al fallback local
+                }
+            } else {
+                Log::warning("CLOUDINARY_URL no detectado, usando storage local.");
             }
 
             // ── Fallback: guardar en disco local ──
