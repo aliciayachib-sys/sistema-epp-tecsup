@@ -78,57 +78,27 @@
     .badge-vencido { background-color:#dc3545; color:#fff; font-size:.6rem; padding:2px 6px; border-radius:20px; }
     .badge-proximo { background-color:#fd7e14; color:#fff; font-size:.6rem; padding:2px 6px; border-radius:20px; }
 
-    /* ── RESPONSIVE ── */
-
-    /* Header: botones apilados en xs */
     @media (max-width: 575.98px) {
-        .header-actions {
-            width: 100%;
-        }
-        .header-actions .btn {
-            flex: 1 1 auto;
-            justify-content: center;
-            font-size: .82rem;
-            padding: 6px 10px;
-        }
+        .header-actions { width: 100%; }
+        .header-actions .btn { flex: 1 1 auto; justify-content: center; font-size: .82rem; padding: 6px 10px; }
     }
-
-    /* Filter bar: selects full width en xs */
     @media (max-width: 575.98px) {
         .filter-bar-selects .col-12 { width: 100%; }
     }
-
-    /* Cards: 2 columnas en xs (< 576px) */
     @media (max-width: 575.98px) {
         .epp-item { width: 50%; }
         .card-epp .card-body { padding: 0.6rem !important; }
-
-        /* Imagen un poco más pequeña */
         .epp-img-container { height: 130px !important; }
-
-        /* Specs box: fuente más pequeña */
         .specs-box span { font-size: 0.6rem !important; }
-
-        /* Título EPP */
         .card-epp h6 { font-size: .82rem !important; }
         .card-epp .text-primary { font-size: .68rem !important; }
-
-        /* Descripción */
         .card-epp p.text-muted { font-size: .72rem !important; min-height: 1.8rem !important; }
-
-        /* Botón ver detalles */
         .card-epp .btn { font-size: .72rem; padding: 3px 6px; }
-
-        /* Dropdown menú */
         .card-epp .btn-light { padding: 2px 6px; }
     }
-
-    /* Cards: imagen en sm */
     @media (min-width: 576px) and (max-width: 767.98px) {
         .epp-img-container { height: 150px !important; }
     }
-
-    /* Filter strip scroll suave en todos los móviles */
     @media (max-width: 767.98px) {
         .filter-strip { padding-bottom: 6px; }
         .filter-strip .btn { font-size: .78rem; padding: 4px 12px; }
@@ -162,7 +132,6 @@
     {{-- ── FILTER BAR ── --}}
     <div class="card border-0 shadow-sm p-3 mb-4">
         <div class="row g-3 align-items-center filter-bar-selects">
-
             <div class="col-12">
                 <div class="filter-strip">
                     <span class="fw-bold text-muted small text-nowrap"><i class="bi bi-tag me-1"></i>Categoría:</span>
@@ -173,7 +142,6 @@
                     @endforeach
                 </div>
             </div>
-
             <div class="col-12 col-md-4">
                 <div class="input-group">
                     <span class="input-group-text bg-light border-0"><i class="bi bi-search"></i></span>
@@ -181,7 +149,6 @@
                            placeholder="Buscar por código, nombre o detalles...">
                 </div>
             </div>
-
             <div class="col-12 col-sm-6 col-md-4">
                 <select id="deptoFilter" class="form-select">
                     <option value="all">— Filtrar por departamento —</option>
@@ -190,7 +157,6 @@
                     @endforeach
                 </select>
             </div>
-
             <div class="col-12 col-sm-6 col-md-4">
                 <select id="vencimientoFilter" class="form-select">
                     <option value="all">— Filtrar por estado de vencimiento —</option>
@@ -200,7 +166,6 @@
                     <option value="sin_fecha">— Sin fecha de vencimiento —</option>
                 </select>
             </div>
-
         </div>
     </div>
 
@@ -224,6 +189,16 @@
             $deptoIds = $epp->departamentos && $epp->departamentos->count()
                 ? ',' . $epp->departamentos->pluck('id')->implode(',') . ','
                 : ',';
+
+            {{-- ── CORRECCIÓN: detectar si la imagen es URL de Cloudinary o ruta local ── --}}
+            $imagenUrl = null;
+            if ($epp->imagen) {
+                if (str_starts_with($epp->imagen, 'http://') || str_starts_with($epp->imagen, 'https://')) {
+                    $imagenUrl = $epp->imagen;
+                } else {
+                    $imagenUrl = asset('storage/' . $epp->imagen);
+                }
+            }
         @endphp
 
         <div class="col-6 col-sm-6 col-lg-4 col-xl-3 epp-item cat-{{ $epp->categoria_id }}"
@@ -234,13 +209,11 @@
              data-vencimiento="{{ $estadoVencimiento }}">
 
             <div class="card border-0 shadow-sm h-100 card-epp">
-
-                {{-- Imagen + badge --}}
                 <div class="position-relative">
                     <div class="epp-img-container d-flex align-items-center justify-content-center bg-light"
                          style="height:170px; border-bottom:1px solid #f0f0f0; overflow:hidden;">
-                        @if($epp->imagen)
-                            <img src="{{ asset('storage/' . $epp->imagen) }}"
+                        @if($imagenUrl)
+                            <img src="{{ $imagenUrl }}"
                                  class="img-fluid h-100 p-2" style="object-fit:contain;"
                                  onerror="this.parentElement.innerHTML='<div class=\'no-image-placeholder\'><i class=\'bi bi-shield-slash\'></i><span>Sin Imagen</span></div>'">
                         @else
@@ -339,7 +312,6 @@
         @endforelse
     </div>
 
-    {{-- Mensaje cuando filtros no dan resultados --}}
     <div id="emptyStateFilter" class="text-center py-5" style="display:none;">
         <i class="bi bi-funnel display-1 text-muted opacity-25"></i>
         <p class="mt-3 fw-semibold text-muted mb-1">Sin resultados para este filtro</p>
@@ -431,7 +403,6 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-
     const modalEliminar = document.getElementById('modalEliminarEpp');
     if (modalEliminar) {
         modalEliminar.addEventListener('show.bs.modal', function (event) {
@@ -492,23 +463,6 @@ document.addEventListener('DOMContentLoaded', function () {
             vencimientoFilter.value = 'all';
             searchInput.value       = '';
             applyFilters();
-        });
-    }
-
-    const modalImgInput = document.getElementById('modalImagenInput');
-    if (modalImgInput) {
-        modalImgInput.addEventListener('change', function (e) {
-            const file      = e.target.files[0];
-            const preview   = document.getElementById('modal-image-preview');
-            const container = document.getElementById('modal-preview-container');
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = ev => { preview.src = ev.target.result; container.style.display = 'block'; };
-                reader.readAsDataURL(file);
-            } else {
-                container.style.display = 'none';
-                preview.src = '';
-            }
         });
     }
 });
