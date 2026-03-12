@@ -1,6 +1,7 @@
 FROM richarvey/nginx-php-fpm:3.1.6
 
 COPY . /var/www/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 RUN composer install --no-dev --optimize-autoloader
 
