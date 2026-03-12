@@ -190,7 +190,6 @@
                 ? ',' . $epp->departamentos->pluck('id')->implode(',') . ','
                 : ',';
 
-            {{-- ── CORRECCIÓN: detectar si la imagen es URL de Cloudinary o ruta local ── --}}
             $imagenUrl = null;
             if ($epp->imagen) {
                 if (str_starts_with($epp->imagen, 'http://') || str_starts_with($epp->imagen, 'https://')) {
